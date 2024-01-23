@@ -1,0 +1,103 @@
+frameworkVersion: "^3.33.0"
+
+service: thinkcrm-server
+useDotenv: true
+
+plugins:
+  - serverless-prune-plugin
+  - serverless-iam-roles-per-function
+
+custom:
+  prune:
+    automatic: true
+    number: 3
+  serverless-iam-roles-per-function:
+    defaultInherit: true
+
+params:
+  default:
+    REGION: ${opt:region}
+    APP_VERSION: ${env:APP_VERSION}
+    DATABASE_URI: ${env:DATABASE_URI}
+    SIGNATURE_SECRET: ${env:SIGNATURE_SECRET}
+    FRONTEND_URL: crm.${sls:stage}.${env:DOMAIN}
+    API_DOMAIN: crm-api.${sls:stage}.${env:DOMAIN}
+    WSS_DOMAIN: crm-wss.${sls:stage}.${env:DOMAIN}
+    BUCKET_NAME: crm-upload.${sls:stage}.${env:DOMAIN}
+    S3_DOMAIN: https://s3.${opt:region}.amazonaws.com
+    AWS_HOSTED_ZONE_ID: ${env:AWS_HOSTED_ZONE_ID}
+    EVENT_ON_MEMBER_CREATED: ${env:EVENT_ON_MEMBER_CREATED}
+    EVENT_ON_MEMBER_REINVITED: ${env:EVENT_ON_MEMBER_REINVITED}
+    MAIL_FROM: no-reply@${env:DOMAIN}
+    MAIL_ARN: arn:aws:ses:${opt:region}:${aws:accountId}:identity/${env:DOMAIN}
+    WSS_TOKEN_SECRET: ${env:WSS_TOKEN_SECRET}
+    SCRUM_JIRA_API_KEY: ${env:SCRUM_JIRA_API_KEY}
+    SCRUM_JIRA_API_SECRET: ${env:SCRUM_JIRA_API_SECRET}
+    REPO_BITBUCKET_API_KEY: ${env:REPO_BITBUCKET_API_KEY}
+    REPO_BITBUCKET_API_SECRET: ${env:REPO_BITBUCKET_API_SECRET}
+    REPO_GITLAB_API_KEY: ${env:REPO_GITLAB_API_KEY}
+    REPO_GITLAB_API_SECRET: ${env:REPO_GITLAB_API_SECRET}
+    REPO_GITHUB_API_KEY: ${env:REPO_GITHUB_API_KEY}
+    REPO_GITHUB_API_SECRET: ${env:REPO_GITHUB_API_SECRET}
+  production:
+    FRONTEND_URL: crm.${env:DOMAIN}
+    API_DOMAIN: crm-api.${env:DOMAIN}
+    WSS_DOMAIN: crm-wss.${env:DOMAIN}
+    BUCKET_NAME: crm-upload.${env:DOMAIN}
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'development'}
+  ecr:
+    images:
+      thinkcrm-server:
+        path: ./../app
+        file: Dockerfile
+
+resources:
+  Resources:
+    UploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${param:BUCKET_NAME}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          IgnorePublicAcls: false
+          BlockPublicPolicy: false
+          RestrictPublicBuckets: false
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        LifecycleConfiguration:
+          Rules:
+            - Id: TempRetentionRule
+              Prefix: tmp
+              Status: Enabled
+              ExpirationInDays: 1
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedMethods:
+                - GET
+                - POST
+              AllowedHeaders:
+                - "*"
+    ## ***************************************** ##
+    ## ALLOW ANY EVENT BRIDGE TO PUBLISH SQS  ** ##
+    ## ***************************************** ##
+    EventBridgeToSqsPolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        PolicyDocument:
+          Statement:
+            - Sid: "Allow Event Bridge publish to SQS"
+              Effect: "Allow"
+              Resource:
+                - !GetAtt HandleMemberInviteMailQueue.Arn
+              Principal:
+                Service:
+                  - "events.amazonaws.com"
+              Action: SQS:SendMessage
+        Queues:
+          - Ref: HandleMemberInviteMailQueue

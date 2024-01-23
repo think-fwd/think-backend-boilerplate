@@ -1,0 +1,161 @@
+{
+  "MissingPropsError": {
+    "title": "Dados não informados",
+    "message": "Você precisa enviar informações nesse formulário",
+    "solution": "Revise os campos do forulário"
+  },
+  "ValidationException": {
+    "title": "Erro de Validação",
+    "message": "Os dados informados estão inválidos",
+    "solution": "Revise os campos em destaque"
+  },
+  "MissingAuthorizationTokenFailure": {
+    "title": "Token de autenticação ausente",
+    "message": "Parece que você não está autenticado na aplicação",
+    "solution": "Verifique se o token de autenticação foi fornecido corretamente ou tente realizar o login novamente"
+  },
+  "UnauthorizedTokenFailure": {
+    "title": "Token sem autorização",
+    "message": "O token de autorização fornecido é inválido",
+    "solution": "Realize o login novamente"
+  },
+  "UserInvalidPasswordError": {
+    "title": "Credenciais inválidas",
+    "message": "Email ou senha fornecidos estão incorretos",
+    "solution": "Informe credenciais válidas para continuar"
+  },
+  "AuthAudPropsUndefinedException": {
+    "title": "Dados de autenticação ausentes",
+    "message": "Não há dados de autenticação suficientes para gerar uma nova autorização",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "UserRegistrationPropsUndefinedError": {
+    "title": "Dados para a criação do usuário ausentes",
+    "message": "Os dados necessários para a criação do usuário não estão presentes",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "SearchPropositionsUndefinedPropsError": {
+    "title": "Dados para realizar uma pesquisa ausentes",
+    "message": "Os dados necessários para realização da pesquisa não estão presentes",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "UserLoginPropsUndefinedError": {
+    "title": "Credenciais para realizar o login ausentes",
+    "message": "As dados de credenciais necessários para realizar o login não estão presentes",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "UserInvalidEmailError": {
+    "title": "Credenciais inválidas",
+    "message": "Email ou senha fornecidos estão incorretos",
+    "solution": "Informe credenciais válidas para continuar"
+  },
+  "UserForgotPasswordPropsUndefinedError": {
+    "title": "Dados para a redefinição de senha ausentes",
+    "message": "As dados necessários para realizar o redefinição da senha não estão presentes",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "UserResetPasswordPropsUndefinedError": {
+    "title": "Dados para a redefinição de senha ausentes",
+    "message": "As dados necessários para realizar o redefinição da senha não estão presentes",
+    "solution": "Verifique se todas as informações necessárias estão sendo fornecidas"
+  },
+  "TokenNotFoundError": {
+    "title": "Token não encontrado",
+    "message": "Não foi possível encontrar o token para o usuário informado",
+    "solution": "Verifique se o token informado foi copiado corretamente ou realize o processo novamente"
+  },
+  "ErrorMemberSelfDeleted": {
+    "title": "Ação proibida",
+    "message": "Você não pode deleter sua própria conta",
+    "solution": "Peça para que outro administrador realize essa operação para você"
+  },
+  "ErrorMemberAlreadyInvited": {
+    "title": "O usuário já foi convidado",
+    "message": "O email informado já foi convidado a se juntar a organização",
+    "solution": "É possível reenviar o convite para este usuário"
+  },
+  "ErrorMemberInviteNotPending": {
+    "title": "Convite Inválido",
+    "message": "O convite foi invalidado e não pode mais ser utilizado",
+    "solution": "Contate o administrador para receber um novo convite"
+  },
+  "ErrorMemberNotFounded": {
+    "title": "Convite não encontrado",
+    "message": "Não foi possível encontrar o seu convite na organização",
+    "solution": "Contate o administrador para recever um novo convite"
+  },
+  "SuccessUserRegistration": {
+    "title": "Por favor, verifique seu email",
+    "message": "<span>Prezado usuário,</span><span>Bem-vindo à nossa plataforma! Para ativar sua conta, solicitamos que acesse seu e-mail [<b>{{email}}</b>] e siga as instruções de ativação que foram enviadas para você. Essa etapa é importante para garantir a segurança da sua conta e permitir que você desfrute de todos os recursos oferecidos.</span><span>Fique atento à sua caixa de entrada e, se necessário, verifique também a pasta de spam ou lixo eletrônico. Caso não encontre o e-mail de ativação, entre em contato conosco para que possamos ajudá-lo prontamente.</span><span>Agradecemos pela sua compreensão e estamos à disposição para auxiliá-lo em qualquer dúvida ou dificuldade que possa surgir durante o processo de ativação da sua conta.</span><span>Atenciosamente,<br/>Equipe de Suporte</span>"
+  },
+  "SuccessUserActivation": {
+    "title": "Conta Ativada",
+    "message": "Sua conta foi ativada, agora você pode realizar o login na plataforma"
+  },
+  "SuccessActivationOrganizationMember": {
+    "title": "Solicitação Pendente",
+    "message": "Vimos que esta tentando criar sua conta em nosso sistema com o domínio '{{company_domain}}'. Já existe uma organização cadastrada com esse domínio. Enviamos uma solicitação ao admin para confirmar seu acesso.",
+    "solution": "Não se preocupe, enviamos um email para os administrador(es) desta organização no Nomos solicitando a liberação do seu acesso. Assim que aprovado o acesso te notificamos por email e enviaremos as instruções para logar na plataforma."
+  },
+  "SuccessAcceptOrganizationMember": {
+    "title": "Usuário aceito com sucesso",
+    "message": "O usuário {{company_member_name}} foi aceito como um membro da sua organização"
+  },
+  "ValidateRequiredMessage": {
+    "message": "Campo obrigatório"
+  },
+  "ValidateStringTypeMessage": {
+    "message": "Deve ser um texto válido"
+  },
+  "ValidateNumberTypeMessage": {
+    "message": "Deve ser um valor numérico"
+  },
+  "ValidateBooleanTypeMessage": {
+    "message": "Deve ser um valor booleano (true/false)"
+  },
+  "ValidateArrayTypeMessage": {
+    "message": "Deve ser uma lista válida"
+  },
+  "ValidateObjectTypeMessage": {
+    "message": "Deve ser um objeto válido"
+  },
+  "ValidateMinLengthMessage": {
+    "message": "Deve conter ao menos {{size}} caracteres"
+  },
+  "ValidateInvalidEmailMessage": {
+    "message": "E-mail inválido"
+  },
+  "ValidateInvalidObjectIdMessage": {
+    "message": "Formato do identificador inválido (Deve ser do tipo ObjectId)"
+  },
+  "ValidateInvalidUUIDV4Message": {
+    "message": "Formado do identificador inválido (Deve ser do tipo UUID V4)"
+  },
+  "ValidateEnumInvalidOptionMessage": {
+    "message": "Opção informada inválida, as opções disponíveis são: {{options}}"
+  },
+  "ValidateInvalidCnpjMessage": {
+    "message": "O cnpj informado é inválido"
+  },
+  "ValidateInvalidCpfjMessage": {
+    "message": "Deve ser um cpf ou cnpj válido"
+  },
+  "ValidateInvalidCpfMessage": {
+    "message": "Deve ser um cpf válido"
+  },
+  "ValidateInvalidCepMessage": {
+    "message": "Deve ser um cep válido"
+  },
+  "ValidateInvalidE164Message": {
+    "message": "Deve ser um número de telefone no padrão internacional e164"
+  },
+  "ValidateInvalidDateTimeFormatMessage": {
+    "message": "Deve ser uma data válida no formato {{format}}"
+  },
+  "ValidateNotConfirmedMessage": {
+    "message": "Confirmação de campo inválida"
+  },
+  "ValidateInvalidRangeMessage": {
+    "message": "O valor deve estar entre os números {{range_start}} e {{range_end}}"
+  }
+}

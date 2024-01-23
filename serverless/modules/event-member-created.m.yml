@@ -1,0 +1,85 @@
+functions:
+  handle-invite-member-notification:
+    iamRoleStatementsName: handle-invite-member-notification-assume-roles-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action: ses:SendEmail
+        Resource: "*"
+    image:
+      name: thinkcrm-server
+      command: "build/src/presenter/triggers/mongodb/invite-member-notification.handle"
+    name: ${self:provider.stage}-thinkcrm-invite-member-notification
+    description: Function to submit member invite notification always a new member is created.
+    environment:
+      NODE_ENV: ${sls:stage}
+      AWS_FORCE_REGION: ${param:REGION}
+      APP_VERSION: ${param:APP_VERSION}
+      DATABASE_URI: ${param:DATABASE_URI}
+      SIGNATURE_SECRET: ${param:SIGNATURE_SECRET}
+      FRONTEND_URL: ${param:FRONTEND_URL}
+      AWS_S3_UPLOAD_BUCKET_NAME: ${param:BUCKET_NAME}
+    events:
+      - sqs:
+          arn: !GetAtt HandleMemberInviteMailQueue.Arn
+          batchSize: 1
+
+resources:
+  Resources:
+    HandleMemberInviteMailQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: handle-member-invite-mail-${self:provider.stage}
+        VisibilityTimeout: 360
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt HandleMemberInviteMailDeadLetterQueue.Arn
+          maxReceiveCount: 10
+    HandleMemberInviteMailDeadLetterQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: handle-member-invite-mail-${self:provider.stage}-dlq
+    MongoDbOnMemberCreatedEventBus:
+      Type: "AWS::Events::EventBus"
+      Properties:
+        EventSourceName: ${param:EVENT_ON_MEMBER_CREATED}
+        Name: ${param:EVENT_ON_MEMBER_CREATED}
+    EventOnMemberCreatedToSQSRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: connect-event-on-member-created-to-sqs-${self:provider.stage}
+        Description: Conecta o event bus da trigger envio de convite ao sqs - ${self:provider.stage}
+        State: ENABLED
+        EventBusName: !Ref MongoDbOnMemberCreatedEventBus
+        EventPattern:
+          source:
+            - prefix: aws.partner/mongodb.com
+        Targets:
+          - Id: HandleMemberInviteMailQueue
+            Arn: !GetAtt HandleMemberInviteMailQueue.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 10
+              MaximumEventAgeInSeconds: 400
+            DeadLetterConfig:
+              Arn: !GetAtt HandleMemberInviteMailDeadLetterQueue.Arn
+    MongoDbOnMemberReinvitedEventBus:
+      Type: "AWS::Events::EventBus"
+      Properties:
+        EventSourceName: ${param:EVENT_ON_MEMBER_REINVITED}
+        Name: ${param:EVENT_ON_MEMBER_REINVITED}
+    EventOnMemberReinvitedToSQSRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: connect-event-on-member-updated-to-sqs-${self:provider.stage}
+        Description: Conecta o event bus da trigger de envio de convite ao sqs - ${self:provider.stage}
+        State: ENABLED
+        EventBusName: !Ref MongoDbOnMemberReinvitedEventBus
+        EventPattern:
+          source:
+            - prefix: aws.partner/mongodb.com
+        Targets:
+          - Id: HandleMemberInviteMailQueue
+            Arn: !GetAtt HandleMemberInviteMailQueue.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 10
+              MaximumEventAgeInSeconds: 400
+            DeadLetterConfig:
+              Arn: !GetAtt HandleMemberInviteMailDeadLetterQueue.Arn

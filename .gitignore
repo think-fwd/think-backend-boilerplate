@@ -1,0 +1,8 @@
+# Serverless directories
+.serverless
+node_modules
+.env
+.build
+build
+.DS_Store
+serverless.build.yml

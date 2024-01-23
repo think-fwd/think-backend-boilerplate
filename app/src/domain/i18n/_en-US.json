@@ -1,0 +1,161 @@
+{
+  "MissingPropsError": {
+    "title": "Missing Data",
+    "message": "You must to rovide data to this form",
+    "solution": "Review input data"
+  },
+  "ValidationException": {
+    "title": "Validation Error",
+    "message": "The provided data is invalid",
+    "solution": "Review the hilight inputs"
+  },
+  "MissingAuthorizationTokenFailure": {
+    "title": "Missing authorization token",
+    "message": "It looks like you are not authenticated in the application",
+    "solution": "Check if authentication token is provided or try to log-in again"
+  },
+  "UnauthorizedTokenFailure": {
+    "title": "Unauthorized token",
+    "message": "The provided authentication token is invalid",
+    "solution": "Try to log-in again"
+  },
+  "UserInvalidPasswordError": {
+    "title": "Invalid credentials",
+    "message": "The provided email or password is invalid",
+    "solution": "Provide valid credentials to continue"
+  },
+  "AuthAudPropsUndefinedException": {
+    "title": "Auth missing data",
+    "message": "There is no authentication content to generate a new authorization",
+    "solution": "Check if all required data was provided"
+  },
+  "UserRegistrationPropsUndefinedError": {
+    "title": "Missing user required props",
+    "message": "There is no registration content to create a new user",
+    "solution": "Check if all required data was provided"
+  },
+  "SearchPropositionsUndefinedPropsError": {
+    "title": "Missing search required props",
+    "message": "There is no search props to make a search",
+    "solution": "Check if all required data was provided"
+  },
+  "UserLoginPropsUndefinedError": {
+    "title": "Missing credentials required props",
+    "message": "There is no credentials content payload to handle login",
+    "solution": "Check if all required data was provided"
+  },
+  "UserInvalidEmailError": {
+    "title": "Invalid credentials",
+    "message": "The provided email or password is invalid",
+    "solution": "Provide valid credentials to continue"
+  },
+  "UserForgotPasswordPropsUndefinedError": {
+    "title": "Missing redefinition data",
+    "message": "There is no redefinition data payload to handle the reset password",
+    "solution": "Check if all required data was provided"
+  },
+  "UserResetPasswordPropsUndefinedError": {
+    "title": "Missing redefinition data",
+    "message": "There is no redefinition data payload to handle the reset password",
+    "solution": "Check if all required data was provided"
+  },
+  "TokenNotFoundError": {
+    "title": "Token not founded",
+    "message": "Was not possible to find a token for provided user",
+    "solution": "Check if the provided token has copied correctly or try the process again"
+  },
+  "ErrorMemberSelfDeleted": {
+    "title": "Forbidden Action",
+    "message": "You cannot delete your self invite",
+    "solution": "Ask to other administrator to remove your organization invite"
+  },
+  "ErrorMemberAlreadyInvited": {
+    "title": "User Already Invited",
+    "message": "The provided email was already invited to join this organization",
+    "solution": "It is possible to resend the invite"
+  },
+  "ErrorMemberNotFounded": {
+    "title": "Member not founded",
+    "message": "Was not possible to find organization invite",
+    "solution": "Contact the organization admin"
+  },
+  "ErrorMemberInviteNotPending": {
+    "title": "It is not possible to Accept/decline the invite",
+    "message": "The invite is not pending anymore",
+    "solution": "Contact the organization admin"
+  },
+  "SuccessUserRegistration": {
+    "title": "Please, check your email",
+    "message": "We sent an email to {{email}} with a confirmation link"
+  },
+  "SuccessUserActivation": {
+    "title": "Account Activated",
+    "message": "Your account was activated, now you can login to the platform"
+  },
+  "SuccessActivationOrganizationMember": {
+    "title": "Pending approve",
+    "message": "We see that you are trying to create your account in our system with the domain '{{company_domain}}'. There is already an organization registered with this domain. We sent a request to the admin to confirm your access.",
+    "solution": "Don't worry, we've sent an email to {{company_admin_name}} Admin of this organization at Nomos requesting you to grant access. Once access is approved, we will notify you by email and send you instructions to log in to the platform."
+  },
+  "SuccessAcceptOrganizationMember": {
+    "title": "User successfully accepted",
+    "message": "User {{company_member_name}} has been accepted as a member of your organization"
+  },
+  "ValidateRequiredMessage": {
+    "message": "Required field"
+  },
+  "ValidateStringTypeMessage": {
+    "message": "Must to be a text value"
+  },
+  "ValidateNumberTypeMessage": {
+    "message": "Must to be a numeric value"
+  },
+  "ValidateBooleanTypeMessage": {
+    "message": "Must to be a boolean value (true/false)"
+  },
+  "ValidateArrayTypeMessage": {
+    "message": "Must to be a valid list"
+  },
+  "ValidateObjectTypeMessage": {
+    "message": "Must to be a valid object"
+  },
+  "ValidateMinLengthMessage": {
+    "message": "Must to contains at least {{size}} characters"
+  },
+  "ValidateInvalidEmailMessage": {
+    "message": "Invalid email"
+  },
+  "ValidateInvalidObjectIdMessage": {
+    "message": "Invalid identifier format (Must to match ObjectId pattern)"
+  },
+  "ValidateInvalidUUIDV4Message": {
+    "message": "Invalid identifier format (Must to match UUID-V4 pattern)"
+  },
+  "ValidateEnumInvalidOptionMessage": {
+    "message": "Invalid provided option, The available options is: {{options}}"
+  },
+  "ValidateInvalidCnpjMessage": {
+    "message": "The provided document does not matches the brazilian organization number pattern"
+  },
+  "ValidateInvalidCpfjMessage": {
+    "message": "The provided document does not matches the brazilian organization/personal number pattern"
+  },
+  "ValidateInvalidCpfMessage": {
+    "message": "The provided document does not matches the brazilian personal number pattern"
+  },
+  "ValidateInvalidCepMessage": {
+    "message": "The provided zipcode does not matches the brazilian zipcode number pattern"
+  },
+  "ValidateInvalidE164Message": {
+    "message": "Must to be a number phone matching the e164 pattern"
+  },
+  "ValidateInvalidDateTimeFormatMessage": {
+    "message": "Must to be a valid date matching the pattern {{format}}"
+  },
+  "ValidateNotConfirmedMessage": {
+    "message": "Invalid field confirmation"
+  },
+  "ValidateInvalidRangeMessage": {
+    "message": "The value must to be between {{range_start}} and {{range_end}}"
+  }
+}

@@ -1,0 +1,87 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URI")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  output        = "../node_modules/.prisma/client"
+}
+
+enum OrganizationStatus {
+  SETUP
+  ACTIVE
+  BLOCKED
+}
+
+enum MemberStatus {
+  PENDING
+  DECLINED
+  ACCEPTED
+}
+
+enum MemberRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+type OrganizationScrumType {
+  provider         String
+  access_token     String
+  refresh_token    String?
+  access_token_exp Int?
+  id               String
+  url              String
+  name             String
+  scopes           String[]
+  status           String
+}
+
+type OrganizationSRepositoryType {
+  provider         String
+  name             String
+  access_token     String
+  access_token_exp Int?
+  refresh_token    String?
+  status           String
+}
+
+model organization {
+  id         String                       @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  document   String
+  status     OrganizationStatus
+  created_at DateTime                     @default(now())
+  updated_at DateTime                     @updatedAt
+  members    member[]
+  scrum      OrganizationScrumType?
+  repository OrganizationSRepositoryType?
+
+  @@map("organizations")
+}
+
+model member {
+  id                String       @id @default(auto()) @map("_id") @db.ObjectId
+  email             String
+  role              MemberRole
+  status            MemberStatus
+  blocked           Boolean      @default(false)
+  mail_attempt_at   DateTime?
+  mail_attempt_code String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user_id         String?
+  user_name       String?
+  organization_id String       @db.ObjectId
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([email, organization_id])
+  @@unique([user_id, organization_id])
+  @@unique([id, organization_id])
+  @@unique([id, email])
+  @@map("members")
+}

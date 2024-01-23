@@ -1,0 +1,59 @@
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: !Sub thinkcrm-${sls:stage}
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+        AutoVerifiedAttributes:
+          - email
+        UsernameAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: true
+            RequireUppercase: true
+        Schema:
+          - AttributeDataType: String
+            DeveloperOnlyAttribute: false
+            Mutable: true
+            Name: connection_id
+          - AttributeDataType: String
+            DeveloperOnlyAttribute: false
+            Mutable: true
+            Name: status
+          - AttributeDataType: Boolean
+            DeveloperOnlyAttribute: false
+            Mutable: true
+            Name: admin
+            Required: false
+        MfaConfiguration: OFF
+        EmailConfiguration:
+          EmailSendingAccount: DEVELOPER
+          From: ${param:MAIL_FROM}
+          SourceArn: ${param:MAIL_ARN}
+        EmailVerificationMessage: "Your verification code is {####}"
+        EmailVerificationSubject: "Your verification code"
+    CognitoUserPoolClient:
+      Type: "AWS::Cognito::UserPoolClient"
+      Properties:
+        ClientName: !Sub thinkcrm-client-${sls:stage}
+        UserPoolId: !Ref CognitoUserPool
+        ExplicitAuthFlows:
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+        GenerateSecret: true
+  Outputs:
+    UserPoolId:
+      Description: "ID of the created Cognito User Pool"
+      Value: !Ref CognitoUserPool
+    UserPoolClientId:
+      Description: "ID of the created Cognito User Pool Client"
+      Value: !Ref CognitoUserPoolClient
+    UserPoolClientSecret:
+      Description: "Client Secret of the created Cognito User Pool Client"
+      Value: !GetAtt CognitoUserPoolClient.ClientSecret

@@ -1,0 +1,96 @@
+# create a hack implementation to store http server
+# with exptress into a lambda function to manage
+# monolitic application usecases
+
+functions:
+  api:
+    iamRoleStatementsName: api-assume-roles-${self:provider.stage}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action: ses:SendEmail
+        Resource: "*"
+      - Effect: "Allow"
+        Action: cognito-idp:AdminGetUser
+        Resource: "*"
+      - Effect: "Allow"
+        Action:
+          - s3:PutObject
+          - s3:GetObject
+          - s3:ListBucket
+          - s3:DeleteObject
+          - s3:PutObjectAcl
+        Resource: arn:aws:s3:::${param:BUCKET_NAME}/*
+    image:
+      name: thinkcrm-server
+      command: "build/src/presenter/http/express/server.handle"
+    name: ${self:provider.stage}-thinkcrm-server
+    description: Function to handle function as a monolitic api server.
+    environment:
+      NODE_ENV: ${sls:stage}
+      APP_VERSION: ${param:APP_VERSION}
+      FRONTEND_URL: ${param:FRONTEND_URL}
+      DATABASE_URI: ${param:DATABASE_URI}
+      SIGNATURE_SECRET: ${param:SIGNATURE_SECRET}
+      AWS_S3_DOMAIN: ${param:S3_DOMAIN}
+      AWS_S3_UPLOAD_BUCKET_NAME: ${param:BUCKET_NAME}
+      AWS_FORCE_REGION: ${param:REGION}
+      COGNITO_POOL_ID: !Ref CognitoUserPool
+      COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+      COGNITO_CLIENT_SECRET: !GetAtt CognitoUserPoolClient.ClientSecret
+      SCRUM_JIRA_API_KEY: ${param:SCRUM_JIRA_API_KEY}
+      SCRUM_JIRA_API_SECRET: ${param:SCRUM_JIRA_API_SECRET}
+      REPO_BITBUCKET_API_KEY: ${param:REPO_BITBUCKET_API_KEY}
+      REPO_BITBUCKET_API_SECRET: ${param:REPO_BITBUCKET_API_SECRET}
+      REPO_GITLAB_API_KEY: ${param:REPO_GITLAB_API_KEY}
+      REPO_GITLAB_API_SECRET: ${param:REPO_GITLAB_API_SECRET}
+      REPO_GITHUB_API_KEY: ${param:REPO_GITHUB_API_KEY}
+      REPO_GITHUB_API_SECRET: ${param:REPO_GITHUB_API_SECRET}
+      WSS_TOKEN_SECRET: ${param:WSS_TOKEN_SECRET}
+      WSS_MEMCACHED_CONNECTIONID_ADDRESS: !Ref WssMemcachedConnectionId
+    events:
+      - httpApi: "*"
+
+resources:
+  Resources:
+    CertificateDomainPrimary:
+      Type: AWS::CertificateManager::Certificate
+      Properties:
+        ValidationMethod: DNS
+        DomainName: ${param:API_DOMAIN}
+        DomainValidationOptions:
+          - DomainName: ${param:API_DOMAIN}
+            HostedZoneId: ${param:AWS_HOSTED_ZONE_ID}
+        Tags:
+          - Key: Name
+            Value: !Sub ${AWS::StackName}-cert-domain
+    ApiGatewayDomainName:
+      Type: AWS::ApiGatewayV2::DomainName
+      DependsOn:
+        - HttpApi
+        - CertificateDomainPrimary
+      Properties:
+        DomainName: ${param:API_DOMAIN}
+        DomainNameConfigurations:
+          - EndpointType: REGIONAL
+            CertificateArn: !Ref CertificateDomainPrimary
+    ApiGatewayMapping:
+      Type: "AWS::ApiGatewayV2::ApiMapping"
+      DependsOn:
+        - HttpApi
+        - HttpApiStage
+        - ApiGatewayDomainName
+      Properties:
+        ApiId: !Ref HttpApi
+        Stage: !Ref HttpApiStage
+        DomainName: ${param:API_DOMAIN}
+    PrimaryRoute53Record:
+      Type: AWS::Route53::RecordSet
+      DependsOn:
+        - ApiGatewayDomainName
+      Properties:
+        Type: A
+        Name: ${param:API_DOMAIN}
+        HostedZoneId: ${param:AWS_HOSTED_ZONE_ID}
+        AliasTarget:
+          DNSName: !GetAtt ApiGatewayDomainName.RegionalDomainName
+          HostedZoneId: !GetAtt ApiGatewayDomainName.RegionalHostedZoneId

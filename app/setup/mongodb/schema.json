@@ -1,0 +1,24 @@
+[
+  {
+    "unordered": true,
+    "tolerate_resume_errors": true,
+    "name": "EVENT_ON_MEMBER_CREATED",
+    "operation_types": ["INSERT"],
+    "collection": "members",
+    "match": {
+      "fullDocument.mail_attempt_code": { "$exists": true }
+    }
+  },
+  {
+    "unordered": true,
+    "tolerate_resume_errors": true,
+    "name": "EVENT_ON_MEMBER_REINVITED",
+    "operation_types": ["UPDATE"],
+    "collection": "members",
+    "match": {
+      "updateDescription.updatedFields.mail_attempt_code": {
+        "$exists": true
+      }
+    }
+  }
+]

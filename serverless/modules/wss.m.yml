@@ -1,0 +1,109 @@
+# create a websocket connection handler to store
+# client connections and send notifications to them
+
+functions:
+  websocket:
+    image:
+      name: thinkcrm-server
+      command: "build/src/presenter/triggers/websocket/connection.handle"
+    name: ${self:provider.stage}-thinkcrm-notification
+    description: Function to handle connections on websocket notification.
+    environment:
+      NODE_ENV: ${sls:stage}
+      AWS_FORCE_REGION: ${param:REGION}
+      FRONTEND_URL: ${param:FRONTEND_URL}
+      SIGNATURE_SECRET: ${param:SIGNATURE_SECRET}
+      COGNITO_POOL_ID: !Ref CognitoUserPool
+      COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+      COGNITO_CLIENT_SECRET: !GetAtt CognitoUserPoolClient.ClientSecret
+      WSS_MEMCACHED_CONNECTIONID_ADDRESS: !Ref WssMemcachedConnectionId
+    events:
+      - websocket:
+          route: $connect
+          authorizer:
+            name: wssauth
+            identitySource:
+              - "route.request.querystring.Auth"
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: $default
+  wssauth:
+    image:
+      name: thinkcrm-server
+      command: "build/src/presenter/triggers/websocket/authorizer.handle"
+    name: ${self:provider.stage}-thinkcrm-notification-auth
+    description: Function to handle websocket auth handshake.
+    environment:
+      NODE_ENV: ${sls:stage}
+      AWS_FORCE_REGION: ${param:REGION}
+      FRONTEND_URL: ${param:FRONTEND_URL}
+      COGNITO_POOL_ID: !Ref CognitoUserPool
+      COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+      COGNITO_CLIENT_SECRET: !GetAtt CognitoUserPoolClient.ClientSecret
+      WSS_TOKEN_SECRET: ${param:WSS_TOKEN_SECRET}
+resources:
+  Resources:
+    WssCertificateDomain:
+      Type: AWS::CertificateManager::Certificate
+      Properties:
+        ValidationMethod: DNS
+        DomainName: ${param:WSS_DOMAIN}
+        DomainValidationOptions:
+          - DomainName: ${param:WSS_DOMAIN}
+            HostedZoneId: ${param:AWS_HOSTED_ZONE_ID}
+        Tags:
+          - Key: Name
+            Value: !Sub ${AWS::StackName}-cert-domain-notification
+    WssGatewayDomainName:
+      Type: AWS::ApiGatewayV2::DomainName
+      DependsOn:
+        - WebsocketsApi
+        - WssCertificateDomain
+      Properties:
+        DomainName: ${param:WSS_DOMAIN}
+        DomainNameConfigurations:
+          - EndpointType: REGIONAL
+            CertificateArn: !Ref WssCertificateDomain
+    WssGatewayStage:
+      Type: "AWS::ApiGatewayV2::Stage"
+      DependsOn:
+        - WebsocketsApi
+        - WssGatewayDomainName
+        - WssCertificateDomain
+      Properties:
+        ApiId: !Ref WebsocketsApi
+        StageName: !Sub ${AWS::StackName}-websocket-stage
+        AutoDeploy: true
+    WssGatewayMapping:
+      Type: "AWS::ApiGatewayV2::ApiMapping"
+      DependsOn:
+        - WebsocketsApi
+        - WssGatewayStage
+        - WssGatewayDomainName
+        - WssCertificateDomain
+      Properties:
+        DomainName: ${param:WSS_DOMAIN}
+        ApiId: !Ref WebsocketsApi
+        Stage: !Ref WssGatewayStage
+    WssRoute53Record:
+      Type: AWS::Route53::RecordSet
+      DependsOn:
+        - WebsocketsApi
+        - HttpApiStage
+        - WssGatewayMapping
+        - WssGatewayDomainName
+        - WssCertificateDomain
+      Properties:
+        Type: A
+        Name: ${param:WSS_DOMAIN}
+        HostedZoneId: ${param:AWS_HOSTED_ZONE_ID}
+        AliasTarget:
+          DNSName: !GetAtt WssGatewayDomainName.RegionalDomainName
+          HostedZoneId: !GetAtt WssGatewayDomainName.RegionalHostedZoneId
+    WssMemcachedConnectionId:
+      Type: AWS::ElastiCache::ServerlessCache
+      Properties:
+        Engine: memcached
+        ServerlessCacheName: !Sub thinkcrm-${sls:stage}-wss-memcached
+        Description: "Serverless memcached to store wss connection id"

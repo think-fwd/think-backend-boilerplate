@@ -1,0 +1,163 @@
+image: docker:latest
+
+services:
+  - docker:19.03-dind
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+  # workspace
+  DOMAIN: $DOMAIN
+  AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+  AWS_HOSTED_ZONE_ID: $AWS_HOSTED_ZONE_ID
+  AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+  # repository
+  WSS_TOKEN_SECRET: $WSS_TOKEN_SECRET
+  SIGNATURE_SECRET: $SIGNATURE_SECRET
+  DATABASE_URI: $DATABASE_URI
+  ## mongodb triggers
+  MONGODB_ENV: $MONGODB_ENV
+  MONGODB_APP_ID: $MONGODB_APP_ID
+  MONGODB_API_KEY: $MONGODB_API_KEY
+  MONGODB_DATABASE: $MONGODB_DATABASE
+  MONGODB_GROUP_ID: $MONGODB_GROUP_ID
+  MONGODB_API_SECRET: $MONGODB_API_SECRET
+  MONGODB_CLUSTER_NAME: $MONGODB_CLUSTER_NAME
+  # oauth integrations
+  SCRUM_JIRA_API_KEY: $SCRUM_JIRA_API_KEY
+  SCRUM_JIRA_API_SECRET: $SCRUM_JIRA_API_SECRET
+  REPO_BITBUCKET_API_KEY: $REPO_BITBUCKET_API_KEY
+  REPO_BITBUCKET_API_SECRET: $REPO_BITBUCKET_API_SECRET
+  REPO_GITLAB_API_KEY: $REPO_GITLAB_API_KEY
+  REPO_GITLAB_API_SECRET: $REPO_GITLAB_API_SECRET
+  REPO_GITHUB_API_KEY: $REPO_GITHUB_API_KEY
+  REPO_GITHUB_API_SECRET: $REPO_GITHUB_API_SECRET
+
+# <!-- run function definition before all steps and define vars
+before_script:
+  # <!-- install dependencies -->
+  - apk add --update --no-cache curl openssl libssl3
+  - apk add --update nodejs npm jq
+  - openssl version
+  # <!-- define necessary and reusable functions -->
+  - function REPOSITORY_MSG { echo "- missing \$$1 on gitlab repository environment variables"; }
+  - function WORKSPACE_MSG { echo "- missing \$$1 on gitlab workspace environment variables (contact the gitlab account owner)"; }
+  # <!-- creation version control variables -->
+  - HASH=${CI_COMMIT_SHA:0:8}
+  - VERSION=$(cat ./app/package.json | grep -m 1 version | sed 's/[^0-9.]//g')
+  - FILENAME="thinkcrm-${HASH}-version-${VERSION}-build-${CI_PIPELINE_ID}"
+  # <!-- export aws credentials to handle connection -->
+  - export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  - export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+stages:
+  - validate
+  - deploy
+  - cleanup
+
+validate:
+  stage: validate
+  environment:
+    name: $CI_COMMIT_BRANCH
+  script:
+    # <!-- validate required environment variables -->
+    - if [ -z $AWS_ACCESS_KEY_ID ]; then { set -- "$@" "$(WORKSPACE_MSG 'AWS_ACCESS_KEY_ID')"; } fi
+    - if [ -z $AWS_SECRET_ACCESS_KEY ]; then { set -- "$@" "$(WORKSPACE_MSG 'AWS_SECRET_ACCESS_KEY')"; } fi
+    - if [ -z $AWS_DEFAULT_REGION ]; then { set -- "$@" "$(WORKSPACE_MSG 'AWS_DEFAULT_REGION')"; } fi
+    - if [ -z $AWS_HOSTED_ZONE_ID ]; then { set -- "$@" "$(WORKSPACE_MSG 'AWS_HOSTED_ZONE_ID')"; } fi
+    - if [ -z $DOMAIN ]; then { set -- "$@" "$(WORKSPACE_MSG 'DOMAIN')"; } fi
+    - if [ -z $WSS_TOKEN_SECRET ]; then { set -- "$@" "$(WORKSPACE_MSG 'WSS_TOKEN_SECRET')"; } fi
+    - if [ -z $SIGNATURE_SECRET ]; then { set -- "$@" "$(WORKSPACE_MSG 'SIGNATURE_SECRET')"; } fi
+    - if [ -z $DATABASE_URI ]; then { set -- "$@" "$(REPOSITORY_MSG 'DATABASE_URI')"; } fi
+    - if [ -z $SCRUM_JIRA_API_KEY]; then { set -- "$@" "$(REPOSITORY_MSG 'SCRUM_JIRA_API_KEY')"; } fi
+    - if [ -z $SCRUM_JIRA_API_SECRET]; then { set -- "$@" "$(REPOSITORY_MSG 'SCRUM_JIRA_API_SECRET')"; } fi
+    - if [ -z $REPO_BITBUCKET_API_KEY]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_BITBUCKET_API_KEY')"; } fi
+    - if [ -z $REPO_BITBUCKET_API_SECRET]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_BITBUCKET_API_SECRET')"; } fi
+    - if [ -z $REPO_GITLAB_API_KEY]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_GITLAB_API_KEY')"; } fi
+    - if [ -z $REPO_GITLAB_API_SECRET]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_GITLAB_API_SECRET')"; } fi
+    - if [ -z $REPO_GITHUB_API_KEY]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_GITHUB_API_KEY')"; } fi
+    - if [ -z $REPO_GITHUB_API_SECRET]; then { set -- "$@" "$(REPOSITORY_MSG 'REPO_GITHUB_API_SECRET')"; } fi
+    - if [ ${#@} -gt 0 ]; then { echo "<!-- VALIDATION ERRORS --->"; printf "%s\n" "$@"; exit 1; } fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "production"
+
+deploy:
+  stage: deploy
+  environment:
+    name: $CI_COMMIT_BRANCH
+  script:
+    # install all dependencies
+    - npm -g install tsx@3.14.0 amongo serverless@3.33.0 serverless-build-modules serverless-prune-plugin serverless-iam-roles-per-function
+    # <!-- run mongodb setup to create mongodb environment service -->
+    - cd app
+    - npm install --include=dev
+    - echo "MONGODB_URI=${DATABASE_URI}" >> .env
+    - echo "MONGODB_ENV=${MONGODB_ENV}" >> .env
+    - echo "MONGODB_API_KEY=${MONGODB_API_KEY}" >> .env
+    - echo "MONGODB_DATABASE=${MONGODB_DATABASE}" >> .env
+    - echo "MONGODB_GROUP_ID=${MONGODB_GROUP_ID}" >> .env
+    - echo "MONGODB_API_SECRET=${MONGODB_API_SECRET}" >> .env
+    - echo "MONGODB_CLUSTER_NAME=${MONGODB_CLUSTER_NAME}" >> .env
+    - npm run setup:mongodb
+    - npm run setup:migrations
+    # after setting up stripe, it will write an updated STRIPE_WEBHOOK_SECRET to .output
+    # then we must to import it to continue pipeline
+    - source .output 2> /dev/null || true
+    # throws an error if MONGODB_APP_ID was not generated
+    - if [ -z $MONGODB_APP_ID ]; then { echo "MONGODB_APP_ID not defined"; exit 1; } fi
+    - export MONGODB_APP_ID=$MONGODB_APP_ID
+    # <!-- run amongo script to publish triggers on mongodb -->
+    - cd setup/mongodb
+    - apk add --update --no-cache python3 py3-pip && pip3 install --break-system-packages --no-cache-dir --upgrade awscli
+    - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+    - sh amongo.sh
+    # export amongo exported .env variables
+    # and check if it was generated correctly
+    - export $(grep -v '^#' .env | xargs)
+    - if [ -z $EVENT_ON_MEMBER_CREATED ]; then { set -- "$@" "$(REPOSITORY_MSG 'EVENT_ON_MEMBER_CREATED')"; } fi
+    - if [ -z $EVENT_ON_MEMBER_REINVITED ]; then { set -- "$@" "$(REPOSITORY_MSG 'EVENT_ON_MEMBER_REINVITED')"; } fi
+    - if [ ${#@} -gt 0 ]; then { echo "<!-- MONGO TRIGGER ERRORS --->"; printf "%s\n" "$@"; exit 1; } fi
+    # <!-- move to serverless folder for deployment -->
+    - cd ../../../serverless
+    # <!-- mount serverless environment variables -->
+    - echo "DOMAIN=${DOMAIN}" >> .env
+    - echo "DATABASE_URI=${DATABASE_URI}" >> .env
+    - echo "WSS_TOKEN_SECRET=${WSS_TOKEN_SECRET}" >> .env
+    - echo "SIGNATURE_SECRET=${SIGNATURE_SECRET}" >> .env
+    - echo "NODE_ENV=${CI_COMMIT_BRANCH}" >> .env
+    - echo "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}" >> .env
+    - echo "AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}" >> .env
+    - echo "SCRUM_JIRA_API_KEY=${SCRUM_JIRA_API_KEY}" >> .env
+    - echo "SCRUM_JIRA_API_SECRET=${SCRUM_JIRA_API_SECRET}" >> .env
+    - echo "REPO_BITBUCKET_API_KEY=${REPO_BITBUCKET_API_KEY}" >> .env
+    - echo "REPO_BITBUCKET_API_SECRET=${REPO_BITBUCKET_API_SECRET}" >> .env
+    - echo "REPO_GITLAB_API_KEY=${REPO_GITLAB_API_KEY}" >> .env
+    - echo "REPO_GITLAB_API_SECRET=${REPO_GITLAB_API_SECRET}" >> .env
+    - echo "REPO_GITHUB_API_KEY=${REPO_GITHUB_API_KEY}" >> .env
+    - echo "REPO_GITHUB_API_SECRET=${REPO_GITHUB_API_SECRET}" >> .env
+    - echo "APP_VERSION=Hash ${HASH} - Version ${VERSION} - Build ${CI_PIPELINE_ID}" >> .env
+    # <!-- build aws infrastructure with serverless -->
+    - serverless-build-modules --file serverless.yml
+    - cat .env
+    - cat serverless.yml
+    - serverless deploy --config serverless.yml --stage ${CI_COMMIT_BRANCH} --region ${AWS_DEFAULT_REGION} --verbose
+  when: on_success
+  dependencies:
+    - validate
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "production"
+
+cleanup:
+  stage: cleanup
+  environment:
+    name: $CI_COMMIT_BRANCH
+  script:
+    - ECR_REPO=serverless-thinkcrm-server-$CI_COMMIT_BRANCH
+    - apk add --update --no-cache python3 py3-pip && pip3 install --break-system-packages --no-cache-dir --upgrade awscli
+    - IMAGES_TO_DELETE=$( aws ecr list-images --region $AWS_DEFAULT_REGION --repository-name $ECR_REPO --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --max-items 100 --output json )
+    - aws ecr batch-delete-image --region $AWS_DEFAULT_REGION --repository-name $ECR_REPO --image-ids "$IMAGES_TO_DELETE" || true
+  when: on_success
+  dependencies:
+    - deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging" || $CI_COMMIT_BRANCH == "production"
